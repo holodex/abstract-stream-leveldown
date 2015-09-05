@@ -6,7 +6,7 @@
   "author": "Jed Schmidt (http://jed.is)",
   "license": "MIT",
   "scripts": {
-    "test": "node test.js"
+    "test": "standard"
   },
   "dependencies": {
     "abstract-leveldown": "^2.1.0",
@@ -19,5 +19,8 @@
     "leveldown",
     "stream",
     "streams"
-  ]
+  ],
+  "devDependencies": {
+    "standard": "^5.2.1"
+  }
 }

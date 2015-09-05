@@ -2,7 +2,6 @@ var inherits = require('inherits')
 var assign = require('object-assign')
 var AbstractIterator = require('abstract-leveldown/abstract-iterator')
 
-  
 function AbstractStreamIterator (stream) {
   this._stream = stream
   this._hasEnded = false
@@ -18,6 +17,7 @@ function AbstractStreamIterator (stream) {
     this._check()
   }.bind(this))
 }
+
 inherits(AbstractStreamIterator, AbstractIterator)
 
 assign(AbstractStreamIterator.prototype, {

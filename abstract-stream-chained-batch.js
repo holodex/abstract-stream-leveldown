@@ -9,11 +9,12 @@ function AbstractStreamChainedBatch (stream) {
 
   this._stream.on('error', function (err) { this._error = err }.bind(this))
 }
+
 inherits(AbstractStreamChainedBatch, AbstractChainedBatch)
 
 assign(AbstractStreamChainedBatch.prototype, {
   _put: function _put (key, value, options) {
-    this._stream.write({key, value})
+    this._stream.write({ key, value })
   },
 
   _del: function _del (key, options) {
@@ -21,7 +22,7 @@ assign(AbstractStreamChainedBatch.prototype, {
   },
 
   _clear: function _clear () {
-    throw new Error("Not supported.")
+    throw new Error('Not supported.')
   },
 
   _write: function _write (cb) {
