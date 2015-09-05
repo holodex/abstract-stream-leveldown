@@ -1,118 +1,69 @@
-import {AbstractLevelDOWN, AbstractIterator, AbstractChainedBatch} from "abstract-leveldown"
+var inherits = require('inherits')
+var assign = require('object-assign')
+var AbstractLevelDOWN = require('abstract-leveldown/abstract-leveldown')
 
-export class LevelDOWN extends AbstractLevelDOWN {
-  constructor(...args) {
-    super(...args)
-  }
+var AbstractStreamIterator = require('./abstract-stream-iterator')
+var AbstractStreamChainedBatch = require('./abstract-stream-chained-batch')
 
-  _get(key, options, cb) {
-    let opts = {gte: key, lte: key, limit: 1}
-    for (let prop in options) opts[prop] = options[prop]
+function AbstractStreamLevelDOWN (location) {
+  if (!(this instanceof AbstractStreamLevelDOWN))
+    return new AbstractStreamLevelDOWN(location)
+
+  AbstractLevelDOWN.call(this, location)
+}
+inherits(AbstractStreamLevelDOWN, AbstractLevelDOWN)
+
+assign(AbstractStreamLevelDOWN.prototype, {
+  _get: function _get (key, options, cb) {
+    var opts = {gte: key, lte: key, limit: 1}
+    for (var prop in options) opts[prop] = options[prop]
 
     this
       ._iterator(opts)
-      ._next((err, key, value) => {
+      ._next(function (err, key, value) {
         if (err) return cb(err)
 
         if (!key) return cb(new Error("NotFound"))
 
         cb(null, value)
       })
-  }
+  },
 
-  _put(key, value, options, cb) {
+  _put: function _put (key, value, options, cb) {
     this._batch([{type: "put", key, value}], options, cb)
-  }
+  },
 
-  _del(key, options, cb) {
+  _del: function _del (key, options, cb) {
     this._batch([{type: "del", key}], options, cb)
-  }
+  },
 
-  _batch(ops, options, cb) {
-    let batch = this._chainedBatch()
+  _batch: function _batch(ops, options, cb) {
+    var batch = this._chainedBatch()
 
-    for (let {type, key, value} of ops) {
+    ops.forEach(function (op) {
       try {
-        type == "del"
-          ? batch._del(key, options)
-          : batch._put(key, value, options)
+        op.type == "del"
+          ? batch._del(op.key, options)
+          : batch._put(op.key, op.value, options)
       }
 
       catch (err) { cb(err) }
-    }
+    })
 
     batch._write(cb)
+  },
+
+  _iterator: function _iterator (options) {
+    var rs = this._createReadStream(options)
+
+    return new AbstractStreamIterator(rs)
+  },
+
+  _chainedBatch: function _chainedBatch () {
+    var ws = this._createWriteStream()
+
+    return new AbstractStreamChainedBatch(ws)
   }
+})
 
-  _iterator(options) {
-    let rs = this._createReadStream(options)
-
-    return new Iterator(rs)
-  }
-
-  _chainedBatch() {
-    let ws = this._createWriteStream()
-
-    return new ChainedBatch(ws)
-  }
-}
-
-export class Iterator extends AbstractIterator {
-  constructor(stream) {
-    this._stream = stream
-    this._hasEnded = false
-    this._error = null
-
-    this._stream.on("end", () => {
-      this._hasEnded = true
-      this._check()
-    })
-
-    this._stream.on("error", error => {
-      this._error = error
-      this._check()
-    })
-  }
-
-  _next(cb) {
-    this._cb = cb
-    this._check()
-  }
-
-  _check() {
-    if (this._error) return setImmediate(this._cb, this._error)
-
-    let kv = this._stream.read()
-
-    if (kv !== null) return setImmediate(this._cb, null, kv.key, kv.value)
-
-    if (this._hasEnded) return setImmediate(this._cb)
-
-    this._stream.once("readable", () => this._check())
-  }
-}
-
-export class ChainedBatch extends AbstractChainedBatch {
-  constructor(stream) {
-    this._stream = stream
-    this._error = null
-
-    this._stream.on("error", error => this._error = error)
-  }
-
-  _put(key, value, options) {
-    this._stream.write({key, value})
-  }
-
-  _del(key, options) {
-    this._put(key, undefined, options)
-  }
-
-  _clear() {
-    throw new Error("Not supported.")
-  }
-
-  _write(cb) {
-    this._stream.end(() => cb(this._error))
-  }
-}
+module.exports = AbstractStreamLevelDOWN

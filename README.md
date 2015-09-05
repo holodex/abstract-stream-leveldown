@@ -7,9 +7,15 @@ Example
 -------
 
 ```javascript
-import {AbstractStreamLevelDOWN} from "abstract-stream-leveldown"
+var inherits = require('inherits')
+var assign = require('object-assign')
+var AbstractStreamLevelDOWN = require('abstract-stream-leveldown').AbstractStreamLevelDOWN
 
-class MyLevelDOWN extends AbstractStreamLevelDOWN {
+function MyLevelDOWN (location) {
+  AbstractLevelDOWN.call(this, location)
+}
+inherits(MyLevelDOWN, AbstractStreamLevelDOWN)
+assign(AbstractStreamLevelDOWN, {
   _createReadStream([options]) { /* return a Readable */ }
   _createWriteStream([options]) { /* return a Writable */ }
 }
